@@ -41,5 +41,19 @@ for i in os.walk(train_path):
         y_train.append(i[0].split("/")[-1])
         pass
 
-print(X_train)
-print(y_train)
+train_path = "input/Training"
+test_path = "input/Test"
+
+X_test = []
+y_test = []
+
+for i in os.walk(test_path):
+    print(i[0])
+    for j in i[2]:
+        img = cv2.imread(f"{i[0]}/{j}")
+        X_test.append(img)
+        y_test.append(i[0].split("/")[-1])
+        pass
+
+# print(X_test)
+# print(y_test)
