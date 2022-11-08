@@ -6,6 +6,10 @@ from builtins import range
 class knn(object):
     def __init__(self):
         pass
+    
+    def train(self, X, y):
+        self.X_train = X
+        self.y_train = y
 
     def distances(self, X):
         n_train = self.X_train.shape[0]
@@ -15,5 +19,6 @@ class knn(object):
             distance[i, :] = np.sqrt(np.sum(np.square(self.X_train - X[i, :]), axis=1))
             pass
         return distance 
+
 
     
