@@ -20,5 +20,10 @@ class knn(object):
             pass
         return distance 
 
-
+    def predict_labels(self, distance, k=1):
+        n_test = distance.shape[0]
+        predictions = np.zeros(n_test)
+        for i in range(n_test):
+            predictions[i] = np.argmax(np.bincount(self.y_train[np.argsort(distance[i, :])[:k]]))
+        return predictions
     
