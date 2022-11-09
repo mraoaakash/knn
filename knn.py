@@ -3,6 +3,11 @@ from builtins import object as py_object
 from builtins import range
 import cv2
 import os 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import random 
+from scipy import stats
+from sklearn.metrics import confusion_matrix
 class knn(py_object):
     def __init__(self):
         pass
@@ -56,14 +61,29 @@ x_test = x_test.reshape(x_test.shape[0], -1)
 y_test = np.array(y_test)
 y_test = y_test.reshape(y_test.shape[0])
 
-print(f"Training data loaded {np.array(x_train).shape}")
-print(f"Training Labels loaded {np.array(y_train).shape}")
-print(f"Testing data loaded {np.array(x_test).shape}")
-print(f"Testing labels loaded {np.array(y_test).shape}")
+print(f"Training data loaded {np.array(x_train).shape[0]}")
+print(f"Training Labels loaded {np.array(y_train).shape[0]}")
+print(f"Testing data loaded {np.array(x_test).shape[0]}")
+print(f"Testing labels loaded {np.array(y_test).shape[0]}")
 
 model = knn()
 model.train(x_train, y_train)
 distance = model.distances(x_test)
-predictions = model.predict(distance, k=1)
+predictions = model.predict(distance, k=5)
 accuracy = np.mean(predictions == y_test)
 print(f"Accuracy: {accuracy}")
+print(stats.describe(y_train))
+
+sns.set_style("whitegrid")
+
+sns.barplot(x=["Apple", "Avocado"], y=np.bincount(y_train),orient="v", palette = sns.diverging_palette(220, 20,n=2)).set(title = "Training Data Distribution")
+plt.savefig("Training Data Distribution.png")
+plt.clf()
+
+sns.barplot(x=["Apple", "Avocado"], y=np.bincount(y_test),orient="v", palette=sns.diverging_palette(220, 20,n=2)).set(title = "Testing Data Distribution")
+plt.savefig("Testing Data Distribution.png")
+plt.clf()
+
+a = confusion_matrix(y_test, predictions)
+sns.heatmap(a, annot=True, fmt="d", cmap = sns.diverging_palette(220, 20, as_cmap=True)).set(title = "Confusion Matrix")
+plt.savefig("Confusion Matrix.png")
