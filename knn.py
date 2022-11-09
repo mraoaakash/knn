@@ -1,13 +1,13 @@
 import numpy as np
 from builtins import object as py_object
 from builtins import range
-import cv2
-import os 
 import matplotlib.pyplot as plt
 import seaborn as sns
-import random 
-from scipy import stats
+import pandas as pd 
 from sklearn.metrics import confusion_matrix
+from math import sqrt
+
+
 class knn(py_object):
     def __init__(self):
         pass
@@ -38,52 +38,77 @@ class knn(py_object):
 train_path = ["./input/Training/Apple Red Delicious", "./input/Training/Avocado"]
 test_path = ["./input/Test/Apple Red Delicious", "./input/Test/Avocado"]
 
+def cancer_dataset():
+    # Link to the dataset used https://www.kaggle.com/code/lbronchal/breast-cancer-dataset-analysis/data
+    dataset = pd.read_csv('dataset_input/data.csv')
+    dataset = dataset[['diagnosis', 'area_mean', 'compactness_mean', 'symmetry_mean']]
+    print("Dataset Before Renaming Cols:")
+    print(dataset.head())
 
-def load_data(path):
-    images = []
-    labels = []
-    for i in path:
-        for j in os.listdir(i):
-            img = cv2.imread(i + "/" + j)
-            images.append(img)
-            labels.append(path.index(i))
-    return images, labels
+    dataset = dataset.replace({'diagnosis': {'M': 1, 'B': 0}})
+    dataset.rename(columns = {'diagnosis':'y', 'area_mean':'x1', 'compactness_mean':'x2', 'symmetry_mean':'x2'}, inplace = True)
+    print("Dataset After Renaming Cols:")
+    print(dataset.head())
+    x = np.array(dataset.iloc[:, 1:4].values)
+    y = np.array(dataset.iloc[:, 0].values)
+    shape = x.shape[0]
+    x_train = x[:3*shape//4]
+    y_train = y[:3*shape//4]
+    x_test = x[3*shape//4:shape]
+    y_test = y[3*shape//4:shape]
 
-x_train, y_train = load_data(train_path)
-x_train = np.array(x_train)
-x_train = x_train.reshape(x_train.shape[0], -1)
-y_train = np.array(y_train)
-y_train = y_train.reshape(y_train.shape[0])
+    print(f"Training data loaded {x_train.shape[0]}")
+    print(f"Training Labels loaded {y_train.shape[0]}")
+    print(f"Testing data loaded {x_test.shape[0]}")
+    print(f"Testing labels loaded {y_test.shape[0]}")
+    return x_train, y_train, x_test, y_test
 
-x_test, y_test = load_data(test_path)
-x_test = np.array(x_test)
-x_test = x_test.reshape(x_test.shape[0], -1)
-y_test = np.array(y_test)
-y_test = y_test.reshape(y_test.shape[0])
 
-print(f"Training data loaded {np.array(x_train).shape[0]}")
-print(f"Training Labels loaded {np.array(y_train).shape[0]}")
-print(f"Testing data loaded {np.array(x_test).shape[0]}")
-print(f"Testing labels loaded {np.array(y_test).shape[0]}")
 
-model = knn()
-model.train(x_train, y_train)
-distance = model.distances(x_test)
-predictions = model.predict(distance, k=5)
-accuracy = np.mean(predictions == y_test)
-print(f"Accuracy: {accuracy}")
-print(stats.describe(y_train))
+def trainer(x_train, y_train, x_test, y_test, k):
+    mode = knn()
+    mode.train(x_train, y_train)
+    distance = mode.distances(x_test)
+    predictions = mode.predict(distance, k=k)
+    accuracy = np.mean(predictions == y_test)
+    print(f"Accuracy: {round(accuracy, 4)} with k = {k}")
+    return predictions, accuracy
 
-sns.set_style("whitegrid")
 
-sns.barplot(x=["Apple", "Avocado"], y=np.bincount(y_train),orient="v", palette = sns.diverging_palette(220, 20,n=2)).set(title = "Training Data Distribution")
-plt.savefig("Training Data Distribution.png")
-plt.clf()
+def result_plotter(predictions, accuracy):
+    sns.set_style("whitegrid")
 
-sns.barplot(x=["Apple", "Avocado"], y=np.bincount(y_test),orient="v", palette=sns.diverging_palette(220, 20,n=2)).set(title = "Testing Data Distribution")
-plt.savefig("Testing Data Distribution.png")
-plt.clf()
+    sns.barplot(x=["Malignant", "Benign"], y=np.bincount(y_train),orient="v", palette = sns.diverging_palette(220, 20,n=2)).set(title = "Training Data Distribution")
+    plt.savefig("Training Data Distribution.png")
+    plt.clf()
 
-a = confusion_matrix(y_test, predictions)
-sns.heatmap(a, annot=True, fmt="d", cmap = sns.diverging_palette(220, 20, as_cmap=True)).set(title = "Confusion Matrix")
-plt.savefig("Confusion Matrix.png")
+    sns.barplot(x=["Malignant", "Benign"], y=np.bincount(y_test),orient="v", palette=sns.diverging_palette(220, 20,n=2)).set(title = "Testing Data Distribution")
+    plt.savefig("Testing Data Distribution.png")
+    plt.clf()
+
+    a = confusion_matrix(y_test, predictions)
+    ax= plt.subplot()
+    sns.heatmap(a, annot=True, fmt='g', ax=ax);
+    ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels'); 
+    ax.set_title('Confusion Matrix'); 
+    ax.xaxis.set_ticklabels(['Malignant', 'Benign']); ax.yaxis.set_ticklabels(['Benign', 'Malignant']);
+    plt.savefig("Confusion Matrix.png")
+    print("Plots Generated and Saved")
+
+
+if __name__ == "__main__":
+    accuracy_arr = []
+    x_train, y_train, x_test, y_test = cancer_dataset()
+    end = x_test.shape[0]+x_test.shape[0]
+    end = int(sqrt(end))
+    for k in range(1,end):
+        predictions, accuracy = trainer(x_train, y_train, x_test, y_test,k)
+        accuracy_arr.append(accuracy)
+    sns.set_style("whitegrid")
+    sns.lineplot(x=range(1,end), y=accuracy_arr, palette=sns.diverging_palette(220, 20,n=2))
+    sns.scatterplot(x=range(1,end), y=accuracy_arr, palette=sns.diverging_palette(220, 20,n=2)).set(title = "Accuracy vs K")
+    plt.savefig("Accuracy vs K.png")
+    best_k = np.argmax(accuracy_arr)+1
+    print(f"Best K value is {best_k}")
+    predictions, accuracy = trainer(x_train, y_train, x_test, y_test, best_k)
+    result_plotter(predictions, accuracy)
